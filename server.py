@@ -449,6 +449,8 @@ def _demo_forecast():
 
 
 if __name__ == "__main__":
-    print("\n  [*] SciWeather Server")
-    print("  [>] http://localhost:5000\n")
-    app.run(debug=True, port=5000)
+    import os
+    port = int(os.environ.get("PORT", 5000))
+    print(f"\n  [*] SciWeather Server")
+    print(f"  [>] http://localhost:{port}\n")
+    app.run(host="0.0.0.0", debug=True, port=port)
