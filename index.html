@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SciWeather - Globe & Weather Dashboard</title>
+    <meta name="description" content="Interactive 3D Globe and Weather Intelligence Dashboard">
+    <link rel="stylesheet" href="style.css">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap"
+        rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+
+<body>
+    <!-- Severe Weather Alert Banner -->
+    <div id="alert-banner" class="alert-banner" style="display:none">
+        <span class="alert-icon">⚠️</span>
+        <span id="alert-message">Severe Weather Alert</span>
+        <button class="alert-close" onclick="document.getElementById('alert-banner').style.display='none'">✖</button>
+    </div>
+
+    <!-- Ambient Animated Background -->
+    <div class="ambient-bg">
+        <div class="ambient-blob blob-1"></div>
+        <div class="ambient-blob blob-2"></div>
+        <div class="ambient-blob blob-3"></div>
+        <div class="ambient-noise"></div>
+    </div>
+
+    <div class="app">
+
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-brand">
+                <div class="brand-icon">🌍</div>
+                <h1>SciWeather</h1>
+                <p>Calculate. Predict. Plan.</p>
+            </div>
+
+            <div class="sidebar-nav">
+                <!-- My Location Button -->
+                <button class="nav-btn primary-action" onclick="fetchWeatherByGPS()" title="Use my GPS location">
+                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10" />
+                        <circle cx="12" cy="12" r="3" />
+                    </svg>
+                    <span>My Location</span>
+                </button>
+
+                <!-- Recent Searches -->
+                <div class="sidebar-section">
+                    <div class="sidebar-section-title">Recent Searches</div>
+                    <div class="recent-list" id="recent-list">
+                        <!-- Populated by JS -->
+                        <div class="recent-empty">No recent searches</div>
+                    </div>
+                </div>
+
+                <!-- Live Global Hubs -->
+                <div class="sidebar-section">
+                    <div class="sidebar-section-title">Live Global Hubs</div>
+                    <div class="hub-list" id="hub-list">
+                        <!-- Populated by JS -->
+                        <div class="hub-loading">Loading hubs...</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sidebar-footer">
+                <div class="theme-toggle">
+                    <span>Theme</span>
+                    <div class="toggle-group">
+                        <label class="toggle-option">
+                            <input type="radio" name="theme" value="light">
+                            <span>Light</span>
+                        </label>
+                        <label class="toggle-option active-toggle">
+                            <input type="radio" name="theme" value="dark" checked>
+                            <span>Dark</span>
+                        </label>
+                    </div>
+                </div>
+                <div class="footer-info">
+                    <span class="version">v1.0.0</span>
+                    <span class="code-icon">&lt;/&gt;</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+
+            <!-- Top Search Bar -->
+            <div class="top-bar">
+                <div class="search-box">
+                    <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="8" />
+                        <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                    </svg>
+                    <input type="text" id="city-input" placeholder="Search city...">
+                </div>
+                <button class="btn btn-primary" id="search-btn" onclick="fetchWeather()">Get Weather</button>
+            </div>
+
+
+
+            <!-- Dashboard Grid -->
+            <div class="dashboard">
+
+                <!-- LEFT COLUMN -->
+                <div class="col-left">
+
+                    <!-- Interactive Globe -->
+                    <div class="card globe-card fade-in-up" style="animation-delay: 0.1s">
+                        <div class="card-header">
+                            <div class="card-title">
+                                <svg class="title-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="12" cy="12" r="10" />
+                                    <line x1="2" y1="12" x2="22" y2="12" />
+                                    <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+                                </svg>
+                                Interactive Globe
+                            </div>
+                            <div class="globe-controls">
+                                <button class="globe-ctrl-btn" id="globe-spin-btn" onclick="toggleGlobeSpin()" title="Toggle spin">⏸ Pause</button>
+                                <button class="globe-ctrl-btn" id="globe-reset-btn" onclick="resetGlobe()" title="Reset view">↺ Reset</button>
+                            </div>
+                        </div>
+                        <div class="globe-container" id="globe-container">
+                            <canvas id="globe-canvas"></canvas>
+                            <div class="globe-overlay">
+                                <div class="globe-stat" id="globe-lat">LAT: 0.0°</div>
+                                <div class="globe-stat" id="globe-lon">LON: 0.0°</div>
+                            </div>
+                            <div class="globe-zoom-hint">Scroll to zoom • Click to explore</div>
+                        </div>
+
+                        <!-- Location + weather bar -->
+                        <div class="globe-location-bar" id="globe-location-bar">
+                            <div class="glb-left">
+                                <span class="glb-pin">📍</span>
+                                <div class="glb-content">
+                                    <span class="glb-name" id="glb-location-name">Click anywhere on the globe to explore</span>
+                                    <span class="glb-coords" id="glb-location-coords"></span>
+                                </div>
+                            </div>
+                            <div class="glb-weather-mini" id="glb-weather-mini" style="display:none">
+                                <img class="glb-icon" id="glb-weather-icon" src="" alt="">
+                                <span class="glb-temp" id="glb-temp">--°C</span>
+                                <div class="glb-details">
+                                    <span id="glb-condition">--</span>
+                                    <span id="glb-wind">--</span>
+                                    <span id="glb-humidity">--</span>
+                                </div>
+                                <button class="glb-load-btn" onclick="fetchWeatherFromGlobe()" title="Load full weather report">
+                                    → Full Report
+                                </button>
+                            </div>
+                        </div>
+                        <div class="globe-info-row">
+                            <div class="globe-info-item">
+                                <span class="globe-info-label">🌍 Total Countries</span>
+                                <span class="globe-info-val">195</span>
+                            </div>
+                            <div class="globe-info-item">
+                                <span class="globe-info-label">🌊 Ocean Coverage</span>
+                                <span class="globe-info-val">71%</span>
+                            </div>
+                            <div class="globe-info-item">
+                                <span class="globe-info-label">📡 Time Zones</span>
+                                <span class="globe-info-val">24</span>
+                            </div>
+                            <div class="globe-info-item">
+                                <span class="globe-info-label">📏 Circumference</span>
+                                <span class="globe-info-val">40,075 km</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Conversions -->
+                    <div class="card conv-card fade-in-up" style="animation-delay: 0.2s">
+                        <div class="card-title small-title">
+                            <span class="sparkle">&#9889;</span> Quick Conversions
+                        </div>
+                        <div class="conv-row">
+                            <div class="conv-unit">
+                                <input type="number" id="conv-c" value="32" onchange="convertTemp('C')">
+                                <select id="conv-c-unit">
+                                    <option>&#176;C</option>
+                                </select>
+                                <span class="conv-label">Celsius</span>
+                            </div>
+                            <span class="conv-arrow">&#8644;</span>
+                            <div class="conv-unit">
+                                <input type="number" id="conv-f" value="89.60" onchange="convertTemp('F')">
+                                <select id="conv-f-unit">
+                                    <option>&#176;F</option>
+                                </select>
+                                <span class="conv-label">Fahrenheit</span>
+                            </div>
+                            <span class="conv-arrow">&#8644;</span>
+                            <div class="conv-unit">
+                                <input type="number" id="conv-k" value="305.15" onchange="convertTemp('K')">
+                                <select id="conv-k-unit">
+                                    <option>K</option>
+                                </select>
+                                <span class="conv-label">Kelvin</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Formula Library -->
+                    <div class="card formula-card fade-in-up" style="animation-delay: 0.3s">
+                        <div class="card-title small-title">
+                            <span>&#128218;</span> Formula Library
+                        </div>
+                        <div class="formula-tabs">
+                            <button class="formula-tab active" onclick="showFormula('bmi')">BMI</button>
+                            <button class="formula-tab" onclick="showFormula('wind_chill')">Wind Chill</button>
+                            <button class="formula-tab" onclick="showFormula('heat_index')">Heat Index</button>
+                            <button class="formula-tab" onclick="showFormula('uv_index')">UV Index</button>
+                        </div>
+                        <div class="formula-content" id="formula-content">
+                            <div class="formula-inputs" id="formula-inputs"></div>
+                            <div class="formula-result" id="formula-result"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ═══ RIGHT COLUMN ═══ -->
+                <div class="col-right">
+
+                    <!-- City Header -->
+                    <div class="city-header" id="city-header">
+                        <div class="city-info">
+                            <svg class="loc-pin" viewBox="0 0 24 24" fill="currentColor">
+                                <path
+                                    d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
+                            </svg>
+                            <div>
+                                <div style="display:flex; align-items:baseline; gap:12px;">
+                                    <span class="city-name" id="city-name">Search a City</span>
+                                    <span class="city-local-time" id="city-local-time" style="color:var(--text2); font-size:12px; font-weight:500;"></span>
+                                </div>
+                                <span class="city-time" id="city-time"></span>
+                            </div>
+                        </div>
+                        <div class="city-actions">
+                            <button class="icon-btn" onclick="fetchWeather()" title="Refresh">&#8635;</button>
+                        </div>
+                    </div>
+
+                    <!-- Current Weather -->
+                    <div class="card weather-card fade-in-up" style="animation-delay: 0.2s">
+                        <div class="card-title small-title">
+                            <span>&#9728;&#65039;</span> Current Weather
+                        </div>
+                        <div class="weather-main">
+                            <div class="weather-left">
+                                <img id="w-icon-img" src="https://openweathermap.org/img/wn/02d@2x.png" alt="weather"
+                                    class="weather-icon-img">
+                                <div class="weather-temp-block">
+                                    <span class="big-temp" id="w-temp">--</span>
+                                    <span class="temp-unit">&#176;C</span>
+                                </div>
+                                <div class="weather-desc" id="w-desc">--</div>
+                            </div>
+                            <div class="weather-right">
+                                <div class="wr-item"><span class="wr-icon">&#128167;</span> Humidity <span class="wr-val" id="w-hum">--%</span></div>
+                                <div class="wr-item"><span class="wr-icon">&#127744;</span> Wind <span class="wr-val" id="w-wind">-- km/h</span></div>
+                                <div class="wr-item"><span class="wr-icon">&#127777;&#65039;</span> Feels Like <span class="wr-val" id="w-feel">--&#176;C</span></div>
+                                <div class="wr-item"><span class="wr-icon">&#9200;</span> Pressure <span class="wr-val" id="w-pres">-- hPa</span></div>
+                            </div>
+                        </div>
+
+                        <!-- AI Daily Summary -->
+                        <div class="ai-summary-card" id="ai-summary-card" style="display:none">
+                            <div class="ai-header">
+                                <span class="ai-icon">✨</span>
+                                <span class="ai-title">Sci-Guide AI Summary</span>
+                            </div>
+                            <div class="ai-body" id="ai-summary-text">
+                                Generating AI insights...
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Weather Intelligence -->
+                    <div class="card intel-card fade-in-up" style="animation-delay: 0.3s">
+                        <div class="card-title small-title">
+                            <span>&#9881;&#65039;</span> Weather Intelligence (Calculated)
+                        </div>
+                        <div class="intel-list">
+                            <div class="intel-item">
+                                <div class="intel-icon hot">&#128293;</div>
+                                <div class="intel-info">
+                                    <div class="intel-name">Heat Index <span class="intel-sub">(Feels Like)</span></div>
+                                    <div class="intel-desc">How hot it actually feels</div>
+                                </div>
+                                <div class="intel-value" id="w-heat">--&#176;C</div>
+                            </div>
+                            <div class="intel-item">
+                                <div class="intel-icon cold">&#10052;&#65039;</div>
+                                <div class="intel-info">
+                                    <div class="intel-name">Wind Chill</div>
+                                    <div class="intel-desc">Perceived temperature by wind</div>
+                                </div>
+                                <div class="intel-value" id="w-chill">--&#176;C</div>
+                            </div>
+                            <div class="intel-item">
+                                <div class="intel-icon dew">&#127811;</div>
+                                <div class="intel-info">
+                                    <div class="intel-name">Dew Point</div>
+                                    <div class="intel-desc">Comfort level indicator</div>
+                                </div>
+                                <div class="intel-value" id="w-dew">--&#176;C</div>
+                            </div>
+                            <div class="intel-item">
+                                <div class="intel-icon uv">&#9728;&#65039;</div>
+                                <div class="intel-info">
+                                    <div class="intel-name">UV Index</div>
+                                    <div class="intel-desc">Sun exposure level</div>
+                                </div>
+                                <div class="intel-val-group">
+                                    <span class="intel-value" id="w-uv">--</span>
+                                    <span class="intel-cat" id="w-uv-cat">--</span>
+                                </div>
+                            </div>
+                            <div class="intel-item">
+                                <div class="intel-icon" style="background: rgba(46, 204, 113, 0.1); color: #2ecc71;">🍃</div>
+                                <div class="intel-info">
+                                    <div class="intel-name">Air Quality (AQI) <span class="intel-sub" id="w-aqi-sub">--</span></div>
+                                    <div class="intel-desc">PM2.5: <span id="w-pm25">--</span> µg/m³</div>
+                                </div>
+                                <div class="intel-val-group">
+                                    <span class="intel-value" id="w-aqi">--</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Smart Calculator Tools -->
+                    <div class="card tools-card">
+                        <div class="card-title small-title">
+                            <span>&#9889;</span> Smart Calculator Tools
+                        </div>
+                        <div class="smart-tools-grid">
+                            <div class="smart-tool" onclick="showSmartTool('travel')">
+                                <div class="st-icon">&#128652;</div>
+                                <div class="st-name">Travel Time Calculator</div>
+                            </div>
+                            <div class="smart-tool" onclick="showSmartTool('fuel')">
+                                <div class="st-icon">&#9981;&#65039;</div>
+                                <div class="st-name">Fuel Efficiency Estimator</div>
+                            </div>
+                            <div class="smart-tool" onclick="showSmartTool('clothing')">
+                                <div class="st-icon">&#128086;</div>
+                                <div class="st-name">Clothing Advisor</div>
+                            </div>
+                            <div class="smart-tool" onclick="showSmartTool('rain')">
+                                <div class="st-icon">&#9729;&#65039;</div>
+                                <div class="st-name">Rain Probability Calculator</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 24h Temperature Trend -->
+                    <div class="card chart-card">
+                        <div class="card-title small-title">
+                            <span>&#128200;</span> 24h Temperature Trend
+                        </div>
+                        <canvas id="temp-chart" height="120"></canvas>
+                    </div>
+
+                </div>
+            </div>
+        </main>
+
+    </div>
+
+    <!-- ═══ Smart Tool Modal ═══ -->
+    <div class="modal-overlay" id="smart-modal-overlay">
+        <div class="modal-content" id="smart-modal">
+            <div class="modal-header">
+                <h3 id="modal-title">Smart Tool</h3>
+                <button class="modal-close" onclick="closeSmartModal()">&times;</button>
+            </div>
+            <div class="modal-body" id="modal-body">
+                <!-- dynamic content -->
+            </div>
+        </div>
+    </div>
+
+    <!-- AI Chat FAB & Panel -->
+    <button class="ai-fab" id="ai-fab" onclick="toggleAIChat()" title="Ask Sci-Guide">
+        <span class="ai-fab-icon">✨</span>
+    </button>
+
+    <div class="ai-chat-panel" id="ai-chat-panel">
+        <div class="ai-chat-header">
+            <div class="ai-chat-title">
+                <span class="ai-fab-icon">✨</span> Sci-Guide AI
+            </div>
+            <button class="ai-close-btn" onclick="toggleAIChat()">✖</button>
+        </div>
+        <div class="ai-chat-body" id="ai-chat-body">
+            <div class="ai-msg ai-bot">
+                Hello! I'm Sci-Guide. Ask me anything about the current weather, travel tips, or clothing advice based on what's happening outside!
+            </div>
+        </div>
+        <div class="ai-chat-input">
+            <input type="text" id="ai-input" placeholder="Ask about the weather..." onkeypress="if(event.key==='Enter') sendChatMessage()">
+            <button class="ai-send-btn" onclick="sendChatMessage()">➤</button>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>
