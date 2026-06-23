@@ -1,4 +1,15 @@
+---
+title: SciWeather
+emoji: 🌍
+colorFrom: blue
+colorTo: indigo
+sdk: docker
+app_port: 7860
+pinned: false
+---
+
 # 🌍 SciWeather - Globe & Weather Intelligence Dashboard
+
 
 SciWeather is a state-of-the-art, interactive 3D Globe and Weather Intelligence Dashboard. It combines modern frontend visualizations with advanced meteorological calculations and real-time AI assistance powered by Google Gemini.
 
