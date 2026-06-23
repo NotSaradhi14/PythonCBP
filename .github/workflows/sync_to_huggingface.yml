@@ -15,4 +15,4 @@ jobs:
       - name: Push to Hub
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
-        run: git push --force https://NotSaradhi14:$HF_TOKEN@huggingface.co/spaces/NotSaradhi14/SciWeather main
+        run: git push --force https://NotSaradhi14:$HF_TOKEN@huggingface.co/spaces/NotSaradhi14/Sci-Weather main
